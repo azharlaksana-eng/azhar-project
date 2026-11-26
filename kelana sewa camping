@@ -1,0 +1,940 @@
+import csv
+import os
+import pandas as pd
+from tabulate import tabulate
+from datetime import datetime
+
+def register():
+    os.system('cls')
+    print("---------------------------------------------")
+    print("               LAMAN REGISTRASI              ")
+    print("---------------------------------------------")
+    with open('data_user.csv', mode="r") as file:
+        username_sama = {baris["username"] for baris in csv.DictReader(file)}
+    
+    while True:
+        username = input("Masukkan username baru:        ").strip()
+        if len(username) < 3:
+            print("Username minimal 3 huruf!")
+            input("Tekan Enter untuk melanjutkan")
+            continue
+        elif username in username_sama :
+            print("Username telah terdaftar!")
+            input("Silahkan tekan 'Enter' untuk mencoba lagi.")
+            continue
+        else:
+            break
+
+
+    while True:
+        password = input("Masukkan password baru:        ").strip()
+        
+        if len(password) < 5:
+            print("Password terlalu pendek! Minimal 5 karakter.")
+            continue
+
+        break
+
+    nama = input("Masukkan nama lengkap:         ").strip()
+            
+    try:
+            umur = int(input("Masukkan umur:         "))
+    except ValueError:
+            print("Umur harus berupa angka!")
+    if umur < 18:
+                print("\nMaaf, Anda belum cukup umur untuk mendaftar.")
+                return False
+    while True:    
+        NIK = input("Masukkan NIK:       ").strip()
+        if len(str(NIK)) != 16:
+            print("NIK harus terdiri dari 16 karakter.")
+            input("Tekan 'Enter' untuk mencoba lagi.")
+            continue
+        else:
+            break
+
+    alamat = input("Masukkan alamat:         ").strip()
+
+    file_exists = os.path.exists('data_user.csv')
+    with open('data_user.csv', 'a', newline='') as file:
+        writer = csv.writer(file)
+
+        if not file_exists:
+            writer.writerow([
+                'username', 'password', 'nama',
+                'umur', 'NIK', 'alamat', 'role'
+            ])
+        
+        writer.writerow([
+              username, password, nama,
+              umur, NIK, alamat, 'user'
+        ])
+    print("Registrasi berhasil! Silakan login.")
+    input("Tekan 'Enter' untuk melanjutkan.")
+    main()
+    
+
+def login():
+    global usernamelogin
+    os.system('cls')
+    print("---------------------------------------------")
+    print("                 LAMAN LOGIN                 ")
+    print("---------------------------------------------")
+    username = input("Username:         ").strip()
+    password = input("Password:         ").strip()
+
+    with open('data_user.csv', mode='r') as file:
+              reader = csv.DictReader(file)
+              for baris in reader:
+                if baris['username'] == username and baris['password'] == password :
+                    usernamelogin = username
+                    print("Login berhasil!")
+                    input("Tekan 'Enter' untuk melanjutkan.")
+                    os.system('cls')
+                    return baris['role']
+
+    print(f"\nLogin gagal! Username atau password salah.")
+    input("Tekan 'Enter' untuk mencoba lagi.")
+    os.system('cls')
+    return None
+              
+
+def menu_satusatu():
+    os.system('cls')
+    print("--------------------------------------------------------")
+    print("                     MENU SATU-SATU                     ")
+    print("--------------------------------------------------------")
+    df = pd.read_csv("data_barang.csv", dtype=str)
+
+    for i in range(len(df)):
+        harga = str(df.iloc[i, 2]).strip()
+        stok = str(df.iloc[i, 3]).strip()
+
+        if harga.isdigit():
+            df.iloc[i, 2] = f"Rp {int(harga):,}".replace(",", ".")
+        elif harga != "" and harga.lower() != "nan":
+            df.iloc[i, 2] = harga
+        else:
+            df.iloc[i, 2] = "-"
+
+        if stok == "" or stok.lower() == "nan":
+            df.iloc[i, 3] = "-"
+        else:
+            df.iloc[i, 3] = stok
+
+    print(
+        tabulate(
+            df[["no", "nama_produk", "harga_sewa_per_hari", "stok"]],
+            headers=("No", "Nama Produk", "Sewa/Hari", "Stok"),
+            tablefmt="simple",
+            showindex=False,
+        )
+    )
+
+
+def menu_paket_bundling():
+    os.system('cls')
+    with open("data_bundling.csv", "r") as file:
+        baca = csv.reader(file)
+        next(baca)
+
+        print("              PAKET BUNDLING            ")
+        print("----------------------------------------")
+
+        for baris in baca:
+            print("\nNo                  :", baris[0])
+            print("Nama Paket            :", baris[1])
+            print("Harga Sewa Per Hari   : Rp", baris[2])
+            print("Stok Paket            :", baris[4])
+            print("List Produk           :")
+
+            tampilkan_produk(baris[3])
+
+            print("------------------------------------")
+
+
+def tampilkan_produk(teks):
+    nomor = 1
+    produk = ""
+
+    for huruf in teks + ";":
+        if huruf == ";":
+            print(nomor, ".", produk)
+            nomor += 1
+            produk = ""
+        else:
+            produk += huruf
+
+
+def sewa_satusatu():
+    while True:
+        menu_satusatu() 
+        print("\nKetik 0 jika sudah selesai dan ingin membayar")
+
+        pilihan = input("Masukkan nomor barang:      ").strip()
+
+        if pilihan == "0":
+            transaksi()
+            break
+
+        ditemukan = False
+
+        with open("data_barang.csv", "r") as file:
+            reader = csv.reader(file)
+            next(reader)
+            for baris in reader:
+                if baris[0] == pilihan:
+                    ditemukan = True
+                    print("\nProduk :", baris[1])
+                    print("Harga    :", baris[2])
+                    print("Stok     :", baris[3])
+
+                    if int(baris[3]) == 0:
+                        print("Maaf, stok barang ini sedang kosong.")
+                    else:
+                        jumlah = input("Masukkan jumlah yang ingin disewa: ").strip()
+
+                        if jumlah.isdigit() and 0 < int(jumlah) <= int(baris[3]):
+                            simpan_keranjang("satuan", baris[0], baris[1], baris[2], int(jumlah), baris[1])
+                        else:
+                            print("Jumlah tidak valid.")
+                    break
+        
+    
+        if ditemukan == False:
+            print("Nomor barang tidak tersedia.")
+        input("\nTekan Enter untuk melanjutkan...")
+
+
+def sewa_bundling():
+    while True: 
+        os.system('cls')
+        print("                 PILIH PAKET                   ")  
+        print("-----------------------------------------------")
+        print("1. Paket Camping Bersamamu")
+        print("2. Paket Summit Bersamamu")
+        print("3. Paket Camping Mini Family")
+        print("4. Paket Camping Big Family")
+        print("\nKetik 0 jika sudah selesai dan ingin membayar.")
+
+        pilihan_produk = input("Masukkan nomor paket: ").strip()
+
+        if pilihan_produk == '0':
+            transaksi()
+            return
+
+        os.system('cls')
+        ditemukan = False
+    
+        with open("data_bundling.csv", "r") as file:
+            reader = csv.reader(file)
+            next(reader)
+
+            for baris in reader:   
+                if len(baris) > 0 and baris[0] == pilihan_produk:
+                    ditemukan = True
+
+                print("\n---------- DETAIL PAKET ----------")
+                print("No                  :", baris[0])
+                print("Nama Paket          :", baris[1])
+                print("Harga Sewa Per Hari : Rp", baris[2])
+                print("Stok Paket          :", baris[4])
+
+                if int(baris[4]) > 0:
+                    print("Status              : Tersedia")
+                    print("List Produk         :")
+                    tampilkan_produk(baris[3])
+
+                jumlah = int(input("\nMasukkan jumlah paket yang ingin disewa: "))
+
+                if jumlah > 0 and jumlah <= int(baris[4]):
+                    simpan_keranjang(
+                        "bundling",
+                        baris[0],
+                        baris[1],
+                        baris[2],
+                        jumlah,
+                        baris[3],
+                    )
+                    
+                else:
+                    print("Status              : Stok habis")
+
+                break
+    
+        if ditemukan == False:
+            print("Nomor paket tidak tersedia.")
+            os.system('cls')
+
+
+def simpan_keranjang(tipe, no, nama, harga, jumlah, produk):
+    with open("keranjang.csv", "a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow([usernamelogin, tipe, no, nama, harga,jumlah, produk])
+
+    print("Berhasil ditambahkan ke keranjang!")
+
+file_keranjang = "keranjang.csv" 
+def kosongkan_keranjang():
+    df = pd.read_csv(file_keranjang)
+
+    df = df[df['usernamelogin'] != usernamelogin]
+
+    df.to_csv(file_keranjang, index=False)
+
+
+
+def transaksi():
+    os.system('cls')
+    
+    print("==============================")
+    print("       TRANSAKSI KELANA       ")
+    print("==============================")     
+
+    jumlah_item = 0
+    with open("keranjang.csv", "r") as file:
+        reader = csv.reader(file)
+        next(reader) 
+        for baris in reader:
+            if len(baris) > 0 and baris[0] == usernamelogin:
+                jumlah_item += 1
+
+    if jumlah_item == 0:
+        print("Keranjang kosong. Silakan tambah barang dulu")
+        input("Tekan Enter untuk kembali.")
+        return
+    
+    print("\nSelamat Datang di KELANA,", usernamelogin)
+
+    while True:
+        try:
+            tanggal_sewa = input("\nTanggal Mulai Sewa (DD-MM-YYYY): ")
+            sewa = datetime.strptime(tanggal_sewa, "%d-%m-%Y")
+
+            tanggal_kembali = input("Tanggal Kembali (DD-MM-YYYY): ")
+            kembali = datetime.strptime(tanggal_kembali, "%d-%m-%Y")
+
+            if kembali < sewa:
+                print("Tanggal kembali tidak boleh sebelum tanggal sewa!")
+            else:
+                break
+
+        except ValueError:
+            print("Format tanggal salah!")
+
+    durasi = (kembali - sewa).days
+    if durasi == 0:
+        durasi = 1
+
+    print("Lama Sewa:", durasi, "Hari")
+
+    os.system('cls')
+    print("\n---------- RINCIAN TRANSAKSI ----------")
+    print("Username:", usernamelogin)
+    print("Tanggal Sewa:", tanggal_sewa)
+    print("Tanggal Kembali:", tanggal_kembali)
+    print("Durasi:", durasi, "Hari")
+
+    total = 0
+    daftar_barang = ""
+
+    with open("keranjang.csv", "r") as file:
+        reader = csv.reader(file)
+        next(reader)
+        for baris in reader:
+            if len(baris) > 0 and baris[0] == usernamelogin:
+                nama = baris[3]
+                harga = int(baris[4])
+                jumlah = int(baris[5])
+                subtotal = harga * jumlah * durasi
+                total += subtotal
+
+                if daftar_barang != "":
+                    daftar_barang += ";"
+                daftar_barang += nama + " x" + str(jumlah)
+
+                print("\nNama Barang:", nama)
+                print("Harga/Hari: Rp", harga)
+                print("Jumlah:", jumlah)
+                print("Subtotal: Rp", subtotal)
+
+    print("\nTotal Pembayaran: Rp", total)
+
+    print("\n========== METODE PEMBAYARAN ==========")
+    print("1. Cash")
+    print("2. Transfer")
+
+    metode = input("Pilih Pembayaran: ")
+    status = "Belum Lunas"
+
+    if metode == "1":
+        metode = "Cash"
+        uang = input("Uang Pembayaran: Rp ")
+
+        if uang.isdigit() and int(uang) >= total:
+            status = "Lunas"
+            print("Kembalian: Rp", int(uang) - total)
+        else:
+            status = "Belum Lunas"
+            print("Uang pembayaran tidak mencukupi!")
+
+    elif metode == "2":
+        metode = "Transfer"
+        uang = input("Nominal Transfer: Rp")
+
+        if uang.isdigit() and int(uang) == total:
+            status = "Lunas"
+            print("Transfer berhasil!")
+        else:
+            status = "Belum Lunas"
+            print("Nominal transfer tidak sesuai!")
+
+    else:
+        print("Metode pembayaran tidak tersedia!")
+        metode = "Tidak Valid"
+        status = "Belum Lunas"
+
+    
+    if status == "Lunas":
+        status_sewa = "Sedang Disewa"
+    else:
+        status_sewa = "Belum Dimulai"
+
+
+    header = [
+        "Username", "Tanggal Sewa", "Tanggal Kembali",
+        "Durasi", "Barang", "Total", "Metode",
+        "Status Pembayaran", "Status Sewa"
+    ]
+
+    file_baru = (
+        not os.path.exists("transaksi.csv")
+        or os.path.getsize("transaksi.csv") == 0
+    )
+
+    baru = pd.DataFrame([{
+        "Username": usernamelogin,
+        "Tanggal Sewa": tanggal_sewa,
+        "Tanggal Kembali": tanggal_kembali,
+        "Durasi": durasi,
+        "Barang": daftar_barang,
+        "Total": total,
+        "Metode": metode,
+        "Status Pembayaran": status,
+        "Status Penyewaan": status_sewa
+    }])
+
+
+    if os.path.exists(file_transaksi) > 0:
+        df = pd.read_csv(file_transaksi)
+        df = pd.concat([df, baru,], ignore_index=True)
+    else:
+        df = baru
+
+    df.to_csv(file_transaksi, index=False)
+    
+    
+    if status == "Lunas":
+        with open("keranjang.csv", "r") as file:
+            reader = csv.reader(file)
+            next(reader)
+            for baris in reader:
+                if len(baris) > 0 and baris[0] == usernamelogin:
+                    if baris[1] == "satuan":
+                        kurangi_stok_satuan(baris[2], int(baris[5]))
+                    else:
+                        kurangi_stok_bundling(baris[2], int(baris[5]))
+        
+        print("\nStok berhasil diperbarui!")
+        kosongkan_keranjang()
+        
+        print("\n========== TRANSAKSI SELESAI ==========")
+        print("Username:", usernamelogin)
+        print("Metode Pembayaran:", metode)
+        print("Total: Rp", total)
+        print("Status Pembayaran:", status)
+        print("Status Penyewaan:", status_sewa)
+        print("Data berhasil disimpan!")
+
+    else:
+        print("\nTidak ada barang yang disewa.")
+
+
+
+def kurangi_stok_satuan(no_item, jumlah):
+    df = baca_barang()
+    df['no'] = df['no'].astype(str)
+
+    if str(no_item) not in df['no'].values:
+        print("Nomor produk tidak ditemukan")
+        return
+
+    df.loc[df['no'] == str(no_item), 'stok'] -= jumlah
+    df.to_csv(file_barang, index=False)
+
+
+
+
+def tambah_stok_satuan(nama_produk, jumlah) :
+    df = baca_barang()
+
+    if nama_produk not in df['nama_produk'].values:
+        print("Produk", nama_produk, "tidak ditemukan!")
+        return
+
+    df.loc[df['nama_produk'] == nama_produk, 'stok'] += jumlah
+    df.to_csv("data_barang.csv", index=False)
+
+
+
+file_bundling = "data_bundling.csv"
+def baca_bundling():
+    return pd.read_csv(file_bundling, stype={'no': str})
+
+
+def kurangi_stok_bundling(no_item, jumlah):
+    df = baca_bundling()
+
+
+    if str(no_item) not in df['no'].values:
+            print("Nomor tidak ditemukan!")
+            return
+
+    df.loc[df['no'] == str(no_item), 'stok'] -= jumlah
+    df.loc_csv(file_bundling, index=False)
+
+
+
+
+def tambah_stok_bundling(nama_paket, jumlah):
+    df = baca_bundling()
+
+    if nama_paket not in df['nama_paket'].values:
+        print("Paket", nama_paket, "tidak ditemukan!")
+        return
+
+    df.loc[df['nama_paket'] == nama_paket, 'stok'] += jumlah
+    df.to_csv(file_bundling, index=False)
+
+
+
+def pengembalian():
+    os.system('cls')
+    denda_per_hari = 50000
+    print("---------------------------------------")
+    print("          PENGEMBALIAN PRODUK          ")
+    print("---------------------------------------")
+    
+
+    if not os.path.exists("transaksi.csv"):
+        print("Belum ada transaksi.")
+        input("\nTekan Enter untuk kembali..")
+        return
+
+    nomor = 0
+    with open("transaksi.csv", "r") as file:
+        reader = csv.reader(file)
+        next(reader)
+        for baris in reader:
+            if len(baris) > 0 and baris[0] == usernamelogin and baris[8] == "Sedang Disewa":
+                nomor += 1
+                print("\n[" + str(nomor) + "]")
+                print("Tanggal Sewa  :", baris[1])
+                print("Harus Kembali :", baris[2])
+                print("Barang        :", baris[4])
+
+    if nomor == 0:
+        print("Tidak ada barang yang sedang kamu sewa.")
+        input("\nTekan Enter untuk kembali..")
+        return
+
+    pilih = input("\nPilih nomor sewa yang dikembalikan (0 = batal): ").strip()
+
+    if pilih == "0":
+        return
+    if pilih.isdigit() == False or int(pilih) < 1 or int(pilih) > nomor:
+        print("Pilihan tidak valid.")
+        input("\nTekan Enter untuk kembali..")
+        return
+
+    barang = ""
+    tanggal_balik = ""
+    urutan = 0
+    with open("transaksi.csv", "r") as file:
+        reader = csv.reader(file)
+        next(reader)
+        for baris in reader:
+            if len(baris) > 0 and baris[0] == usernamelogin and baris[8] == "Sedang Disewa":
+                urutan += 1
+                if urutan == int(pilih):
+                    barang = baris[4]
+                    tanggal_kembali = baris[2]
+
+    print("\n--- PENGECEKAN BARANG ---")
+    print("Masukkan jumlah yang kamu kembalikan untuk tiap barang.\n")
+
+    cocok = True
+    item = ""
+    for huruf in barang + ";":
+        if huruf == ";":
+            item = item.strip()
+            if item != "": 
+                posisi = item.rfind(" x")
+                nama = item[:posisi]
+                jumlah_sewa = int(item[posisi + 2:])
+
+                kembali = input(nama + " (disewa " + str(jumlah_sewa) + "): ").strip()
+                if kembali.isdigit() == False or int(kembali) != jumlah_sewa:
+                    cocok = False
+                    print(" -> TIDAK COCOK")
+
+            item = ""
+        else:
+            item += huruf
+    if cocok == False:
+        print("\nBarang yang dikembalikan tidak sesuai.")
+        print("Pengembalian belum diproses")
+        print("Silahkan kembalikan produk sesuai dengan yg Anda pinjam.")
+        input("\nTekan Enter untuk kembali..")
+        return
+
+    batas = datetime.strptime(tanggal_kembali, "%d-%m-%Y")
+    hari_ini = datetime.now()
+    terlambat = (hari_ini - batas).days
+
+    hari_terlambat = 0
+    denda = 0
+    if terlambat > 0:
+        hari_terlambat = terlambat
+        denda = hari_terlambat * denda_per_hari
+
+    tanggal_dikembalikan = hari_ini.strftime("%d-%m-%Y")
+
+    print("\n=== HASIL PENGEMBALIAN ===")
+    print("Harus Kembali    :", tanggal_kembali)
+    print("Dikembalikan     :", tanggal_dikembalikan)
+    if hari_terlambat > 0:
+        print("Terlambat    :", hari_terlambat, "hari")
+        print("Denda        :", denda)
+    else:
+        print("Terimakasih sudah tepat waktu.")
+    
+    file_baru = not os.path.exists("data_pengembalian.csv")
+
+    with open("data_pengembalian.csv", "a", newline="") as file:
+        writer = csv.writer(file)
+
+        if file_baru:
+            writer.writerow(["Username", "Barang", "Tanggal Seharusnya Kembali", 
+                             "Tanggal Dikembalikan", "Hari Terlambat", "Denda"])
+        writer.writerow([usernamelogin, barang, tanggal_kembali, 
+                         tanggal_dikembalikan, hari_terlambat, denda])
+    urutan = 0
+    with open("transaksi.csv", "r") as lama:
+        with open("temp.csv", "w", newline="") as baru:
+            reader = csv.reader(lama)
+            writer = csv.writer(baru)
+
+            writer.writerow(next(reader))
+
+            for baris in reader:
+                if len(baris) > 0:
+                    if baris[0] == usernamelogin and baris[8] == "Sedang Disewa":
+                        urutan += 1
+                        if urutan == int(pilih):
+                            baris[8] = "Sudah Dikembalikan"
+                        writer.writerow(baris)
+
+    os.replace("temp.csv", "transaksi.csv")
+
+    print("\nPengembalian berhasil. Terimakasih!")
+    input("\nTekan Enter untuk melanjutkan..")
+    os.system('cls')
+
+
+
+
+file_barang = "data_barang.csv"
+def baca_barang():
+    return pd.read_csv(file_barang, dtype={'no': str})
+
+def tambah_produk():
+    df = baca_barang()
+    no = input("Nomor produk baru: ").strip()
+
+    if no in df['no'].values:
+        print("Nomor produk sudah dipakai!")
+        return
+
+    nama = input("Nama produk:   ").strip()
+    harga = int(input("Harga sewa per hari:     "))
+    stok = int(input("Stok awal:     "))
+
+    baru = pd.DataFrame([{
+        'no': no, 'nama_produk': nama,
+        'harga_sewa_per_hari': harga, 'stok': stok
+    }])
+    df = pd.concat([df, baru], ignore_index=True)
+    df.to_csv(file_barang, index=False)
+    print("Barang berhasil ditambahkan!")
+
+
+
+def ubah_stok():
+    df = baca_barang()
+    print(df.to_string(index=False))
+    kode = input("\nMasukkan nomor produk: ").strip()
+
+    if kode not in df['no'].values:
+        print("Nomor produk tidak ditemukan!")
+        return
+
+    while True:
+        try:
+            stok = int(input("Masukkan jumlah stok baru: "))
+            if stok < 0:
+                print("Stok tidak boleh negatif!")
+                continue
+
+            break
+        except ValueError:
+            print("Stok harus berupa angka!")
+
+    df.loc[df['no'] == kode, 'stok'] = stok
+    df.to_csv(file_barang, index=False)
+    print("Stok berhasil diubah!")
+
+
+
+def hapus_produk():
+    df = baca_barang()
+    print(df.to_string(index=False))
+
+    while True:
+        kode = (input("\nMasukkan nomor produk yang dihapus: ")).strip()
+
+        if kode.isdigit():
+            break
+
+        print("Silahkan masukkan angka!")
+
+    if kode not in df['no'].values:
+        print("Nomor produk  tidak ditemukan!")
+        return
+
+    df = df[df['no'] != kode]
+    df.to_csv(file_barang, index=False)
+    print("Barang berhasil dihapus!")
+
+
+
+def menu_customer():
+    os.system('cls')
+    while True:
+        print("--------------------------------------------------")
+        print("                  MENU CUSTOMER                   ")
+        print("--------------------------------------------------")
+        print("1. Daftar Produk")
+        print("2. Tambah Pesanan")
+        print("3. Pengembalian Produk")
+        print("0. Keluar")
+        pilihan = input("Pilih menu (1/2/3/0): ")
+
+    
+        if pilihan == '1':
+
+            os.system('cls')
+            print("-----------  SILAKAN MEMILIH MENU -----------")
+            print("a. Menu Satu-satu")
+            print("b. Menu Rame-rame")
+            print("0. Kembali")
+                    
+            pilih_menu = input("Pilih menu (a/b/0): ")
+            if pilih_menu == 'a':
+                os.system('cls')
+                menu_satusatu()
+            elif pilih_menu == 'b':
+                menu_paket_bundling()
+            elif pilih_menu =='0':
+                main()
+            else:
+                print("Pilihan tidak valid. Silahkan memilih menu yang tersedia (a/b).")
+                return
+                       
+        elif pilihan == '2':
+            os.system('cls')
+            print("1. Sewa satu-satu")
+            print("2. Sewa rame-rame")
+            
+            pilih_sewa = input("Pilih menu (1/2): ")
+            if pilih_sewa == '1':
+                sewa_satusatu()
+            elif pilih_sewa == '2':
+                sewa_bundling()
+        elif pilihan == '3':
+            pengembalian()
+        elif pilihan == '0':
+            break
+        else:
+            print("Pilihan tidak ada.")
+    os.system('cls')
+
+
+file_transaksi = "transaksi.csv"
+file_kembali = "data_pengembalian.csv"
+
+
+def riwayat():
+    os.system('cls')
+    print("---------------------------------------")
+    print("           RIWAYAT TRANSAKSI           ")
+    print("---------------------------------------")
+
+    if not os.path.exists(file_transaksi):
+        print("Belum ada transaksi.")
+        input("\nTekan 'Enter' untuk kembali..")
+        return
+
+    df = pd.read_csv(
+        file_transaksi,
+        header=0,
+        names=["Username", "Tanggal Sewa", "Tanggal Kembali", "Durasi", "Barang",
+               "Total", "Metode", "Status Pembayaran", "Status Sewa"]    
+    )
+
+    if len(df) == 0:
+        print("Belum ada riwayat transaksi.")
+        input("\nTekan 'Enter' untuk kembali..")
+        return
+
+    tabel = df.drop(columns=["Barang"]).copy()
+    tabel["Durasi"] = tabel["Durasi"].astype(str) + "Hari"
+    tabel["Total"] = "Rp " + tabel["Total"].astype(str)
+    tabel.insert(0, "No", range(1, len(tabel) + 1))
+   
+
+    print()
+    print(tabulate(tabel, headers="keys", )
+
+    
+    lunas = df[df["Status Pembayaran"] == "Lunas"]
+    print("\nTotal transaksi :", len(df))
+    print("Total pemasukan : Rp", lunas["Total"].sum())
+
+    input("\nTekan Enter untuk kembali..")
+    os.system('cls')
+
+
+
+def pengembalian_admin():
+    os.system('cls')
+    print("---------------------------------------")
+    print("      PENGEMBALIAN   &   DENDA         ")
+    print("---------------------------------------")
+    
+
+    if not os.path.exists(file_kembali) == 0:
+        print("Belum ada barang yang dikembalikan.")
+        input("\nTekan 'Enter' untuk kembali..")
+        return
+
+    df = pd.read_csv(
+        file_kembali,
+        header=0,
+        names=["Username", "Barang", "Jadwal Kembali", "Dikembalikan",
+               "Terlambat (hari)", "Denda"]
+    )
+
+    if len(df) == 0:
+        print("Belum ada barang yang dikembalikan.")
+        input("\nTekan Enter untuk kembali..")
+        return
+
+    tabel = df.copy()
+
+    tabel["Barang"] = tabel["Barang"].astype(str).apply(
+        lambda teks: teks if len(teks) <= 30 else teks[:30] + "..."
+    )
+    tabel["Denda"] = "Rp " + tabel["Denda"].astype(str)
+    tabel.index = range(1, len(tabel) + 1)
+    tabel.index.name = "No"
+
+    print()
+    print(tabel.to_string())
+
+    print("\nTotal denda terkumpul: Rp", df["Denda"].sum())
+
+
+
+def menu_admin():
+    os.system('cls')
+    while True:
+        print("---------------------------------------") 
+        print("              MENU ADMIN               ")
+        print("---------------------------------------") 
+        print("1. Rekap persewaan")
+        print("2. Denda dan Pengembalian")
+        print("3. Ubah stok")
+        print("0. Logout")
+        menu = input("Pilih menu (1/2/3/0): ")
+
+        if menu == "1":
+            riwayat()
+        elif menu == "2":
+            pengembalian_admin()
+        elif menu == "3":
+            print("1. Tambah Produk")
+            print("2. Hapus Produk")
+            print("3. Ubah Stok Produk")
+            print("0. Kembali")
+            pilih_menu = int(input("Masukkan pilihan (1/2/3/0):     "))
+            if pilih_menu == '1':
+                tambah_produk()
+            elif pilih_menu == '2':
+                hapus_produk()
+            elif pilih_menu == '3':
+                ubah_stok()  
+            elif pilih_menu == '0':
+                return       
+        elif menu == "0":
+            print()
+            return
+        else:
+            print("Pilihan salah. Silahkan masukkan angka yang sesuai")
+            os.system('cls')
+    
+
+# Program utama
+def main():
+    os.system('cls')
+    while True:
+        print("==================================================")
+        print("    KELANA - KELOLA LAYANAN ALAT NANJAK & ALAM    ")
+        print("            PILIH REGISTER & LOGIN                ")
+        print("==================================================")
+        print("1. Register (Daftar Akun)")
+        print("2. Login (Masuk)")
+        print("0. Keluar")
+
+        pilihan = input("Pilih menu (1/2/0): ")
+
+        if pilihan == '1':
+            register()
+
+        elif pilihan == '2':
+            role = login()
+            if role == "user":
+                menu_customer()
+            elif role == "admin":
+                menu_admin()
+
+        elif pilihan == '0':
+            print("Terima kasih telah menggunakan program ini.")
+            break
+
+        else:
+            print("\nPilihan tidak valid. Silakan masukkan angka 1, 2, atau 0.")
+
+
+if __name__ == "__main__":
+    main()
